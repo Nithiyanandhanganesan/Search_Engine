@@ -1,0 +1,27 @@
+lucene = core framework which is used as search engine.
+Used for searching data in documents.
+It cannot search document/ html pages in web. If we want to search in web, use third party library such as nutch which crawls the webpage and gives back the result 
+to lucene and lucene perfoms the search on top the the nutch result.
+Lucene is used only for indexing and searching.
+
+LUCENE FEATURES:
+
+-Indexing and searching
+-ranked searching
+-phrase queries , wildcard quereis
+-fielded searching (title, author)
+-sorting by any field
+- multiple index searching with merged results
+- join and results grouping.
+
+It uses inverted index technique with merge sort.	
+
+Query types:
+
+Term query (dog)
+Phrase query (french fries)
+wildcard query (fren?/fren*)
+Prefix query (fre/fri)
+Fuzzy query (mathches an imprecise term)
+
+SOLR: = built on top of lucene.

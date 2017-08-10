@@ -1,0 +1,230 @@
+Features:
+===========================
+
+Solr provides powerful features to support a keyword search box.
+Solr also provides a powerful solution for implementing geospatial queries.
+With Solr’s geospatial support, you can sort documents by geo distance, limit documents to those within a particular geo distance, 
+or even return the geo distance per document from any location.
+
+
+But one key difference between a Lucene query and a database query is that in Lucene results are ranked by their relevance to a query, 
+and database results can only be sorted by one or more of the table columns.
+
+
+
+CHAPTER 3:
+===============
+
+Every piece of data submitted to Solr for processing is a document.
+Each document contains one or more fields, each of which is modeled as a particular field type: string, tokenized text, Boolean, date/time, lat/long, etc. 
+Solr has a flexible schema for each document, it’s not “schema-less.”
+All field types must be defined, and all field names (or dynamic field-naming patterns) should be specified in Solr’s schema.xml
+
+Each field in a document has its content analyzed according to its field type, and the results of that analysis are saved into a 
+search index in order to later retrieve the document by sending in a related query.
+
+The inverted index:
+=======================
+
+Solr uses Lucene’s inverted index to power its fast searching capabilities.
+multiple documents would contain a document’s ID mapped to one or more content fields containing all of the words/terms in that document, 
+an inverted index inverts this model and maps each word/term in the corpus to all of the documents in which it appears.
+
+All terms in the index map to one or more documents.
+Terms in the inverted index are sorted in ascending lexicographical order.
+
+The index in the back of a book is actually an inverted index, as defined by the examples above - a list of words, and where to find them in the book. 
+In a book, the table of contents is like a forward index: it's a list of documents (chapters) which the book contains, 
+except instead of listing the words in those sections, the table of contents just gives a name/general description of what's contained in those documents.
+
+Type of operator in search:
+-----------------------------
+new AND house  
+new OR house
+new house NOT rental
+
+While the default configuration in Solr assumes that a term or phrase by itself is an optional term, this is configurable 
+on a per-query basis using the q.op URL parameter with many of Solr’s query handlers.
+/select/?q=new house&q.op=ORversus /select?q=new house&q.op=AND
+Note that if you change the default operator from OR to AND, this will switch to requiring all terms specified without an explicit Boolean operator.
+
+Terms:
+---------
+new
+home
+
+Phrases:
+-----------
+"new home" OR "new house"
+"3 bedrooms" AND "walk in closet" AND "granite countertops"
+
+Grouped expressions:
+---------------------
+
+- New AND (house OR (home NOT improvement NOT depot NOT grown))
+- (+(buying purchasing -renting) +(home house residence –(+property -bedroom)))
+
+Wildcard searching:
+--------------------
+
+Query: off*r Matches offer, officer, officiator, and so on
+
+the more characters you specify at the beginning of the term before the wildcard, the faster the query should run. 
+For example, the query engineer* will not be expensive (because it matches few terms in the inverted index), 
+but the query e* will be expensive, as it matches all terms beginning with the letter e.
+
+Executing a leading wildcard query is an expensive operation.  [Query: *ing]
+If you need to be able to search using these leading wildcards, a faster solution exists, but it requires additional configuration. 
+The solution is achieved by adding ReversedWildcardFilterFactory to your field type’s analysis chain
+
+wildcards are only meant to work on individual search terms, not on phrase searches.
+
+Range searching:
+------------------
+
+For example, if you only wanted to match documents created in the six months between February 2, 2012, and August 2, 2012, you could perform the following search:
+
+Query: created:[2012-02-01T00:00.0Z TO 2012-08-02T00:00.0Z]
+This range query format also works on other field types:
+
+Query: yearsOld:[18 TO 21] Matches 18, 19, 20, 21
+Query: title:[boat TO boulder] Matches boat, boil, book, boulder, etc.
+Query: price:[12.99 TO 14.99] Matches 12.99, 13.000009, 14.99, etc.
+
+Each of these range queries surrounds the range with square brackets, which is the “inclusive” range syntax.
+
+Solr also supports exclusive range searching through the use of curly braces:
+Query: yearsOld:{18 TO 21} Matches 19 and 20 but not 18 or 21
+
+Though it may look odd syntactically, Solr also provides the ability to mix and match inclusive and exclusive bounds:
+Query: yearsOld:[18 TO 21} Matches 18, 19, 20, but not 21
+
+Fuzzy/edit-distance searching:
+-------------------------------
+
+For many search applications, it’s important not only to match a customer’s text exactly, but also to allow flexibility for handling spelling 
+errors or even slight variations in correct spellings.
+
+Solr achieves these fuzzy edit-distance searches through the use of the tilde (~) character as follows:
+Query: administrator~ Matches: adminstrator, administrater, administratior, and so forth
+
+
+An edit distance is defined as an insertion, a deletion, a substitution, or a transposition of characters. 
+The term adminstrator (missing the “i” in the sixth position) is one edit distance away from administrator because it has one character deletion. 
+Likewise the term sadministrator would be one edit distance away because it has one insertion (the “s” that was prepended), and the term administratro 
+would also be one edit distance away because it has transposed the last two characters (“or” became “ro”).
+
+It’s also possible to modify the strictness of edit-distance searches to allow matching of terms with any edit distance:
+
+Query: administrator~1 Matches within one edit distance.
+Query: administrator~2 Matches within two edit distances. (This is the default if no edit distance is provided.)
+Query: administrator~N Matches within N edit distances.
+
+Proximity searching:
+----------------------
+
+Query: "chief officer"~1
+Meaning: chief and officer must be a maximum of one position away.
+Examples: "chief executive officer", "chief financial officer"
+
+Query: "chief officer"~2
+Meaning: chief and officer must be a maximum of two edit distances away.
+Examples: "chief business development officer", "officer chief"
+
+Query: "chief officer"~N
+Meaning: Finds chief within N positions of officer.
+
+
+Relevancy:
+================
+
+Solr’s relevancy scores are based upon the Similarity class, which can be defined on a per-field basis in Solr’s schema.xml (discussed further in chapter 5). 
+Similarity is a Java class that defines how a relevancy score is calculated based upon the results of a query.
+By default, Solr uses Lucene’s (appropriately named) DefaultSimilarity class, which uses a two-pass model to calculate similarity.
+
+First, it makes use of a Boolean model (described in section 3.1) to filter out any documents that do not match the customer’s query. 
+Then it uses a vector space model for scoring and drawing the query as a vector, as well as an additional vector for each document. 
+The similarity score for each document is based upon the cosine between the query vector and that document’s vector.
+
+TF & IDF:
+-----------
+count of terms , frequency of the terms.
+
+Boosting:
+---------------
+If you have domain knowledge about your content—you know that certain fields or terms are more (or less) important than others.
+
+Query-time boosting, the most flexible and easiest to understand form of boosting, uses the following syntax:
+Query: title:(solr in action)^2.5 description:(solr in action)
+
+Query boosts can also be used to penalize certain terms if a boost of less than 1.0 is used:
+Query: title:(solr in action) description:(solr in action)^0.2
+
+Normalization factors:
+-------------------------
+
+The field normalization factor (field norm) is a combination of factors describing the importance of a particular field on a per-document basis.
+Field norms are calculated at index time and are represented as an additional byte per field in the Solr index.
+the boost set on the document when indexed, the boost set on the field when indexed, and a length normalization factor that penalizes longer 
+documents and helps shorter documents (under the assumption that finding any given keyword in a longer document is more likely and therefore less relevant).
+
+Distributed searching:
+-----------------------
+
+Solr includes this kind of distributed searching capability.
+Conceptually, each Solr index (called a Solr core) is available through it’s own unique URL, and each of those Solr cores can be told to perform 
+an aggregated search across other Solr cores using the following syntax:
+
+http://box1:8983/solr/core1/select?q=*:*&shards=box1:8983/solr/core1,box2:8983/solr/core2,box2:8983/solr/core3
+
+if you split one Solr index into two Solr indexes with the same combined number of documents, the distributed search across the two indexes 
+should be approximately 50% faster.
+
+(Query Speed on N+1 indexes) = Aggregation Overhead + (Query Speed on N indexes)/(N+1)
+
+It’s also possible to add multiple more or less identical servers into your system to balance the load of high query volumes.
+
+
+One limit, as we’ve already seen, is that Solr is not relational in any way across documents. 
+It’s not well suited for joining significant amounts of data across different fields on different documents, 
+and it can’t perform join operations at all across multiple servers.
+
+
+
+CONFIGURING SOLR:
+===========================
+
+solr.xml— Defines properties related to administration, logging, sharding, and SolrCloud
+solrconfig.xml— Defines the main settings for a specific Solr core
+schema.xml— Defines the structure of your index, including fields and field types
+
+solr.solr.home  =>  identify the root directory 
+
+Solr scans the home directory for subdirectories containing a core.properties file, which defines basic properties for autodiscovered cores.
+For instance, the example server has a core.properties file in the example/solr/collection1/ directory. 
+The core.properties file contains a single line defining the name of the core, name=collection1, which is all that is needed to trigger autodiscovery 
+for the collection1 core.hich to look for configuration files.
+
+solrconfig.xml:
+=====================
+
+The solrconfig.xml file contains index-management settings.
+<arr>		Named, ordered array of objects			<arr name="last-components">
+								<str>spellcheck</str>
+								</arr>
+<lst>		Named, ordered list of name/value pairs		<lst name="defaults">
+								<str name="omitHeader">true</str>
+								<str name="wt">json</str>
+								</lst>
+<bool>		Boolean value—true or false			<bool>true</bool>
+<str>		String value					<str>spellcheck</str>
+								or
+								<str name="wt">json</str>
+<int>		Integer value					<int>512</int>
+<long>		Long value					<long>1359936000000</long>
+<float>		Float value					<float>3.14</float>
+<double>	Double value					<double>3.14159265359</double>
+
+
+
+

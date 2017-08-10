@@ -1,0 +1,30 @@
+Commands:
+============
+bin/solr start
+bin/solr status
+bin/solr stop
+bin/solr -help
+bin/solr start -p 8984    [ start in different port]
+bin/solr stop -p 8983     [ stop in particular port]
+bin/solr -e techproducts  [ Start Solr with a Specific Bundled Example]
+bin/solr create -c <name> [start Solr with an configuration, else create a core in order to be able to index and search.]
+bin/post -c gettingstarted example/exampledocs/*.xml [ post document to solr for indexing]
+
+
+
+
+Notes:
+========
+The results are contained in an XML document, which you can examine directly by clicking on the link above.
+The document contains two parts. The first part is the responseHeader, which contains information about
+the response itself. The main part of the reply is in the result tag, which contains one or more doc tags, each
+of which contains fields from documents that match the query.
+
+If you don’t specify which fields you want, all of them are returned.
+http://localhost:8983/solr/gettingstarted/select?q=video&fl=id,name,price
+
+example which searches for "black" in the name field only. 
+http://localhost:8983/solr/gettingstarted/select?q=name:black
+
+
+
