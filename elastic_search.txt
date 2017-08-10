@@ -1,0 +1,96 @@
+Installing Marvel:
+----------------------
+
+Marvel is a management and monitoring tool for Elasticsearch, which is free for development use. It comes with an interactive console called Sense, 
+which makes it easy to talk to Elasticsearch directly from your browser.
+
+
+Running Elasticsearch:
+-------------------------
+
+Elasticsearch is now ready to run. You can start it up in the foreground with this:
+./bin/elasticsearch
+
+Add -d if you want to run it in the background as a daemon.
+
+Test it out by opening another terminal window and running the following:
+
+curl 'http://localhost:9200/?pretty'
+
+You should see a response like this:
+{
+   "status": 200,
+   "name": "Shrunken Bones",
+   "version": {
+      "number": "1.4.0",
+      "lucene_version": "4.10"
+   },
+   "tagline": "You Know, for Search"
+}
+This means that your Elasticsearch cluster is up and running
+
+
+Java API:
+----------
+
+If you are using Java, Elasticsearch comes with two built-in clients that you can use in your code:
+
+Node client
+The node client joins a local cluster as a non data node. In other words, it doesn’t hold any data itself, but it knows what data lives on which 
+node in the cluster, and can forward requests directly to the correct node.
+
+Transport client
+The lighter-weight transport client can be used to send requests to a remote cluster. It doesn’t join the cluster itself, but 
+simply forwards requests to a node in the cluster.
+
+Both Java clients talk to the cluster over port 9300, using the native Elasticsearch transport protocol. 
+The nodes in the cluster also communicate with each other over port 9300. 
+If this port is not open, your nodes will not be able to form a cluster.
+
+
+
+RESTful API with JSON over HTTP:
+------------------------------------
+
+
+All other languages can communicate with Elasticsearch over port 9200 using a RESTful API, accessible with your favorite web client. 
+In fact, as you have seen, you can even talk to Elasticsearch from the command line by using the curl command.
+
+A request to Elasticsearch consists of the same parts as any HTTP request: 
+
+curl -X<VERB> '<PROTOCOL>://<HOST>/<PATH>?<QUERY_STRING>' -d '<BODY>'
+
+The parts marked with < > above are:
+
+VERB
+The appropriate HTTP method or verb: GET, POST, PUT, HEAD, or DELETE.
+
+PROTOCOL
+Either http or https (if you have an https proxy in front of Elasticsearch.)
+
+HOST
+The hostname of any node in your Elasticsearch cluster, or localhost for a node on your local machine.
+
+PORT
+The port running the Elasticsearch HTTP service, which defaults to 9200.
+
+QUERY_STRING
+Any optional query-string parameters (for example ?pretty will pretty-print the JSON response to make it easier to read.)
+
+BODY
+A JSON-encoded request body (if the request needs one.)
+
+Example:
+---------
+For instance, to count the number of documents in the cluster, we could use this:
+curl -XGET 'http://localhost:9200/_count?pretty' -d '
+{
+    "query": {
+        "match_all": {}
+    }
+}
+
+
+
+
+'
